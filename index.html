@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Практическое задание Веб-ГИС</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        #map-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #map {
+            width: 80%;
+            height: 80%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+</head>
+
+<body>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+    <script>
+        var map;
+
+        function initMap() {
+            map = new ol.Map({
+                target: 'map',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([0, 0]),
+                    zoom: 2
+                })
+            });
+
+            window.addEventListener('resize', function () {
+                map.updateSize();
+            });
+
+            fetchData().then(data => {
+                data.forEach(obj => {
+                    var marker = new ol.Feature({
+                        geometry: new ol.geom.Point(ol.proj.fromLonLat(obj.coordinates))
+                    });
+
+                    var vectorSource = new ol.source.Vector({
+                        features: [marker]
+                    });
+
+                    var markerVectorLayer = new ol.layer.Vector({
+                        source: vectorSource
+                    });
+
+                    map.addLayer(markerVectorLayer);
+                });
+            });
+        }
+
+        function fetchData() {
+            const cities = ['Washington', 'Tokyo', 'London', 'Moscow', ' Canberra', 'Krasnoyarsk'];
+            const promises = cities.map(city =>
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${city}`)
+                    .then(response => response.json())
+                    .then(data => ({
+                        name: city,
+                        coordinates: [parseFloat(data[0].lon), parseFloat(data[0].lat)]
+                    }))
+            );
+            return Promise.all(promises);
+        }
+
+        document.addEventListener('DOMContentLoaded', initMap); 
+    </script>
+</body>
+
+</html>
